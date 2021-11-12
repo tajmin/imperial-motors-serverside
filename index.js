@@ -39,6 +39,15 @@ async function run() {
             res.json(result);
         });
 
+        //GET: Get Orders
+        app.get('/orders', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const cursor = orderCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
         // POST: Save User
         app.post('/users', async (req, res) => {
             const user = req.body;
