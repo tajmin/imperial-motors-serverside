@@ -22,6 +22,7 @@ async function run() {
         const userCollection = database.collection('users');
         const orderCollection = database.collection('orders');
         const carCollection = database.collection('cars');
+        const reviewCollection = database.collection('reviews');
         console.log('db connected');
 
         //GET: Get Cars
@@ -59,6 +60,22 @@ async function run() {
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            res.json(result);
+        });
+
+        //Post: New Review
+        app.post('/reviews', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.json(result);
+        });
+
+        //DELETE: Cancel Order by id
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
             res.json(result);
         });
 
