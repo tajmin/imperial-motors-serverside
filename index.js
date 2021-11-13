@@ -48,6 +48,14 @@ async function run() {
         const reviewCollection = database.collection('reviews');
         console.log('db connected');
 
+
+        //GET: Get all reviews
+        app.get('/reviews', async (req, res) => {
+            const cursor = reviewCollection.find({});
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
         //GET: Get all Cars
         app.get('/cars', async (req, res) => {
             const cursor = carCollection.find({});
