@@ -111,15 +111,30 @@ async function run() {
             const user = req.body;
             const requestingEmail = req.decodedEmail;
             if (requestingEmail) {
-                const requestingUser = await usersCollection.findOne({ email: requestingEmail });
+                const requestingUser = await userCollection.findOne({ email: requestingEmail });
                 if (requestingUser.role === 'admin') {
                     const filter = { email: user.email };
                     const updateDoc = { $set: { role: 'admin' } };
                     const result = await userCollection.updateOne(filter, updateDoc);
-                    console.log(result);
                     res.json(result);
                 }
+            } else {
+                res.status(403).json({ message: 'You do not have sufficient permission to perform this operation' })
+            }
 
+        });
+
+        //Delete: Delete car by id
+        app.delete('/cars/:id', verifyAuthToken, async (req, res) => {
+            const id = req.params.id;
+            const requestingEmail = req.decodedEmail;
+            if (requestingEmail) {
+                const requestingUser = await userCollection.findOne({ email: requestingEmail });
+                if (requestingUser.role === 'admin') {
+                    const query = { _id: ObjectId(id) };
+                    const result = await carCollection.deleteOne(query);
+                    res.json(result);
+                }
             } else {
                 res.status(403).json({ message: 'You do not have sufficient permission to perform this operation' })
             }
