@@ -6,7 +6,7 @@
 
 Imperial is a concept website for luxury car dealership. This demo website fetures user registration, car purchase, user and admin dashboard and much more.
 
-### A few key points about Wanderlust 
+### A few key points about this site 
 
 -  Created with `create-react-app`
 - `Node` and `Express` for backend servers and APIs
