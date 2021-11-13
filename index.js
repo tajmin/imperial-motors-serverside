@@ -48,7 +48,7 @@ async function run() {
         const reviewCollection = database.collection('reviews');
         console.log('db connected');
 
-        //GET: Get Cars
+        //GET: Get all Cars
         app.get('/cars', async (req, res) => {
             const cursor = carCollection.find({});
             const result = await cursor.toArray();
@@ -84,6 +84,13 @@ async function run() {
             const result = { admin: isAdmin }
             res.send(result);
         });
+
+        // POST: Add a new car
+        app.post('/cars', async (req, res) => {
+            const car = req.body;
+            const result = await carCollection.insertOne(car);
+            res.json(result);
+        })
 
         // POST: Save User
         app.post('/users', async (req, res) => {
