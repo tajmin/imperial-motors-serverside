@@ -2,10 +2,19 @@ const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config();
+const admin = require("firebase-admin");
 const ObjectId = require('mongodb').ObjectId;
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+//imperial-motors-firebase-adminsdk.json
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_TOKEN);
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
 
 // Middleware
 app.use(cors());
@@ -14,6 +23,20 @@ app.use(express.json());
 //Mongodb Connect
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.7xlcz.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+async function verifyAuthToken(req, res, next) {
+
+    if (req.headers?.authorization?.startsWith('Bearer ')) {
+        const token = req.headers.authorization.split(' ')[1];
+
+        try {
+            const decodedUser = await admin.auth().verifyIdToken(token);
+            req.decodedEmail = decodedUser.email;
+        }
+        catch { }
+    }
+    next();
+}
 
 async function run() {
     try {
@@ -40,12 +63,25 @@ async function run() {
             res.json(result);
         });
 
-        //GET: Get Orders
-        app.get('/orders', async (req, res) => {
-            const email = req.query.email;
+        //GET: Get Orders by email
+        app.get('/orders/:email', verifyAuthToken, async (req, res) => {
+            const email = req.params.email;
             const query = { email: email };
             const cursor = orderCollection.find(query);
             const result = await cursor.toArray();
+            res.send(result);
+        });
+
+        //Get: admin role by email
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            let isAdmin = false;
+            if (user?.role === 'admin') {
+                isAdmin = true;
+            }
+            const result = { admin: isAdmin }
             res.send(result);
         });
 
@@ -71,22 +107,22 @@ async function run() {
         });
 
         //Put: Make user admin
-        app.put('/users/admin', async (req, res) => {
+        app.put('/users/admin', verifyAuthToken, async (req, res) => {
             const user = req.body;
-            // const requester = req.decodedEmail;
-            //if (requester) {
-            //  const requesterAccount = await usersCollection.findOne({ email: requester });
-            // if (requesterAccount.role === 'admin') {
-            const filter = { email: user.email };
-            const updateDoc = { $set: { role: 'admin' } };
-            const result = await userCollection.updateOne(filter, updateDoc);
-            console.log(result);
-            res.json(result);
-            // }
-            //}
-            // else {
-            //     res.status(403).json({ message: 'you do not have access to make admin' })
-            // }
+            const requestingEmail = req.decodedEmail;
+            if (requestingEmail) {
+                const requestingUser = await usersCollection.findOne({ email: requestingEmail });
+                if (requestingUser.role === 'admin') {
+                    const filter = { email: user.email };
+                    const updateDoc = { $set: { role: 'admin' } };
+                    const result = await userCollection.updateOne(filter, updateDoc);
+                    console.log(result);
+                    res.json(result);
+                }
+
+            } else {
+                res.status(403).json({ message: 'You do not have sufficient permission to perform this operation' })
+            }
 
         });
 
