@@ -63,6 +63,21 @@ async function run() {
             res.json(result);
         });
 
+        //GET: Get all Orders
+        app.get('/orders', verifyAuthToken, async (req, res) => {
+            const requestingEmail = req.decodedEmail;
+            if (requestingEmail) {
+                const requestingUser = await userCollection.findOne({ email: requestingEmail });
+                if (requestingUser.role === 'admin') {
+                    const cursor = orderCollection.find({});
+                    const result = await cursor.toArray();
+                    res.send(result);
+                }
+            } else {
+                res.status(403).json({ message: 'You do not have permission.' })
+            }
+        });
+
         //GET: Get Orders by email
         app.get('/orders/:email', verifyAuthToken, async (req, res) => {
             const email = req.params.email;
@@ -130,6 +145,20 @@ async function run() {
             }
 
         });
+
+        //PUT: Approve order
+        app.put('/orders', verifyAuthToken, async (req, res) => {
+            const updatedOrder = req.body;
+            const filter = { _id: ObjectId(updatedOrder._id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    status: updatedOrder.status
+                },
+            };
+            const result = await orderCollection.updateOne(filter, updateDoc, options);
+            res.json(result);
+        })
 
         //Delete: Delete car by id
         app.delete('/cars/:id', verifyAuthToken, async (req, res) => {
